@@ -1,14 +1,30 @@
 import React from 'react'
 import Navbar from '../components/layout/Navbar'
 import Hero from '../components/layout/Hero'
+import {
+  FairOpportunitiesSection,
+  FinalCtaSection,
+  Footer,
+  HowItWorksSection,
+  MissionSection,
+  RolesSection,
+  SkillsSection,
+} from '../components/home/HomeSections'
 
 const Home = () => {
   return (
     <>
-    <section className='bg-background'>
-      <Navbar/>
-    </section>
-    <Hero/>
+        <Navbar />
+      <main>
+        <Hero />
+        <RolesSection />
+        <SkillsSection />
+        <HowItWorksSection />
+        <FairOpportunitiesSection />
+        <MissionSection />
+        <FinalCtaSection />
+      </main>
+      <Footer />
     </>
   )
 }

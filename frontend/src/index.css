@@ -5,13 +5,14 @@
   /* Brand colors */
   --color-primary: #4A0010;
   --color-primary-hover: #2D000A;
-  --color-secondary: #C56E3D;
-  --color-secondary-hover: #A9572E;
+  --color-secondary: #A9572E;
+  --color-secondary-hover: #8F4526;
 
   /* Backgrounds */
-  --color-background: #FFFDD0;
-  --color-surface: #FFFAF2;
-  --color-surface-muted: #EDE0CC;
+  --color-background: #F8F5EF;
+  --color-surface: #FFFCF8;
+  --color-surface-muted: #F0E8DC;
+  --color-card: #FFFFFF;
 
   /* Typography colors */
   --color-text-main: #26372D;

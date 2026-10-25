@@ -29,10 +29,10 @@ export const Hero = () => {
         
       <p className='text-lg'>Local skills ·  Fair opportunities ·  Community support</p>
           <div className="flex gap-4 justify-center md:justify-start pt-2">
-            <Button className="text-base px-6 py-3">
-              Explore Gallery
+            <Button href="#explore-skills" className="text-base px-6 py-3">
+              Explore Crafts
             </Button>
-            <Button className="bg-transparent border border-white hover:bg-white hover:text-black text-base px-6 py-3">
+            <Button href="#how-it-works" className="bg-transparent border border-white hover:bg-white hover:text-black text-base px-6 py-3">
               Learn More
             </Button>
           </div>
@@ -40,9 +40,9 @@ export const Hero = () => {
 
         {/* Right Column (Vansh Description) */}
         <div className="w-full md:w-1/2 text-center md:text-left text-white space-y-4 bg-black/20 p-6 rounded-xl backdrop-blur-sm">
-          <h2 className="text-2xl font-bold border-b border-white/20 pb-2">Top Selling Products</h2>
+          <h2 className="text-2xl font-bold border-b border-white/20 pb-2">Made with skill. Connected with opportunity.</h2>
           <p className="text-sm text-gray-300 leading-relaxed">
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Unde, doloremque. Cupiditate repellat maxime nam facere aliquid. Magni consequatur voluptate nemo eius eos qui hic nesciunt explicabo, possimus nostrum officiis eligendi ex, a laudantium voluptates cum rem, neque assumenda perferendis similique quasi. Sapiente, facilis blanditiis, placeat ratione repudiandae id maiores aliquam mollitia fugiat, magnam excepturi. Atque molestias deserunt harum voluptas fugit sint dolore doloremque.
+            SkillBridge brings artisans, customers, industry partners, and learning together to recognise the value of handmade work and make room for new possibilities.
           </p>
         </div>
 

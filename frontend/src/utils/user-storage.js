@@ -1,8 +1,7 @@
-import demoUsers from '../data/demo-users.json'
-
 const REGISTERED_USERS_KEY = 'skillbridge-registered-users'
 const SESSION_USER_KEY = 'skillbridge-current-user'
 const SAVED_ADDRESSES_KEY = 'skillbridge-saved-addresses'
+const PASSWORD_ITERATIONS = 210000
 
 function getAddressOwner(user) {
   return user?.id ?? user?.email?.trim().toLowerCase() ?? 'guest'
@@ -245,16 +244,67 @@ function readRegisteredUsers() {
   }
 }
 
-export function findUserByEmail(email) {
-  const normalizedEmail = email.trim().toLowerCase()
-  const demoUser = demoUsers.users.find(
-    (user) => user.email.toLowerCase() === normalizedEmail,
-  )
-  if (demoUser) return demoUser
+function bytesToBase64(bytes) {
+  return window.btoa(String.fromCharCode(...bytes))
+}
 
-  return readRegisteredUsers().find(
-    (user) => user.email.toLowerCase() === normalizedEmail,
-  ) ?? null
+function base64ToBytes(value) {
+  return Uint8Array.from(window.atob(value), (character) =>
+    character.charCodeAt(0),
+  )
+}
+
+async function hashPassword(password, salt) {
+  if (!window.crypto?.subtle) {
+    throw new Error('Secure password storage is unavailable in this browser.')
+  }
+
+  const key = await window.crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(password),
+    'PBKDF2',
+    false,
+    ['deriveBits'],
+  )
+  const hash = await window.crypto.subtle.deriveBits(
+    {
+      name: 'PBKDF2',
+      salt,
+      iterations: PASSWORD_ITERATIONS,
+      hash: 'SHA-256',
+    },
+    key,
+    256,
+  )
+
+  return new Uint8Array(hash)
+}
+
+export async function authenticateUser(email, password) {
+  const normalizedEmail = email.trim().toLowerCase()
+  const user = readRegisteredUsers().find(
+    (entry) => entry.email.toLowerCase() === normalizedEmail,
+  )
+
+  if (!user?.passwordSalt || !user?.passwordHash) return null
+
+  const candidateHash = await hashPassword(
+    password,
+    base64ToBytes(user.passwordSalt),
+  )
+  const storedHash = base64ToBytes(user.passwordHash)
+  const isValid =
+    candidateHash.length === storedHash.length &&
+    candidateHash.every((byte, index) => byte === storedHash[index])
+
+  if (!isValid) return null
+
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    createdAt: user.createdAt,
+  }
 }
 
 export function readSessionUser() {
@@ -278,28 +328,54 @@ export function clearSessionUser() {
   window.localStorage.removeItem(SESSION_USER_KEY)
 }
 
-export function saveRegisteredUser(profile) {
+export async function saveRegisteredUser(profile) {
   const users = readRegisteredUsers()
   const normalizedEmail = profile.email.trim().toLowerCase()
-  const alreadyRegistered =
-    users.some((user) => user.email.toLowerCase() === normalizedEmail) ||
-    demoUsers.users.some((user) => user.email.toLowerCase() === normalizedEmail)
+  const existingUser = users.find(
+    (user) => user.email.toLowerCase() === normalizedEmail,
+  )
 
-  if (alreadyRegistered) {
+  if (existingUser?.passwordSalt && existingUser?.passwordHash) {
     throw new Error('An account with this email already exists. Log in instead.')
   }
 
-  const newUser = {
-    id: `user-${Date.now()}`,
-    name: profile.name.trim(),
-    email: normalizedEmail,
-    createdAt: new Date().toISOString(),
+  if (typeof profile.password !== 'string' || profile.password.length < 8) {
+    throw new Error('Use a password with at least 8 characters.')
   }
 
-  window.localStorage.setItem(
-    REGISTERED_USERS_KEY,
-    JSON.stringify([...users, newUser]),
-  )
+  if (!window.crypto?.getRandomValues) {
+    throw new Error('Secure password storage is unavailable in this browser.')
+  }
 
-  return newUser
+  const salt = window.crypto.getRandomValues(new Uint8Array(16))
+  const passwordHash = await hashPassword(profile.password, salt)
+  const newUser = {
+    id: existingUser?.id ?? `user-${Date.now()}`,
+    name: existingUser?.name ?? profile.name.trim(),
+    email: normalizedEmail,
+    createdAt: existingUser?.createdAt ?? new Date().toISOString(),
+    passwordSalt: bytesToBase64(salt),
+    passwordHash: bytesToBase64(passwordHash),
+  }
+
+  try {
+    window.localStorage.setItem(
+      REGISTERED_USERS_KEY,
+      JSON.stringify(
+        existingUser
+          ? users.map((user) => (user.id === existingUser.id ? newUser : user))
+          : [...users, newUser],
+      ),
+    )
+  } catch (error) {
+    console.error('Unable to save the registered account.', error)
+    throw new Error('Your account could not be saved in this browser.')
+  }
+
+  return {
+    id: newUser.id,
+    name: newUser.name,
+    email: newUser.email,
+    createdAt: newUser.createdAt,
+  }
 }

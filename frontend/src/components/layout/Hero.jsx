@@ -29,7 +29,7 @@ export const Hero = () => {
         
       <p className='text-lg'>Local skills ·  Fair opportunities ·  Community support</p>
           <div className="flex gap-4 justify-center md:justify-start pt-2">
-            <Button href="#explore-skills" className="text-base px-6 py-3">
+            <Button href="/marketplace" className="text-base px-6 py-3">
               Explore Crafts
             </Button>
             <Button href="#how-it-works" className="bg-transparent border border-white hover:bg-white hover:text-black text-base px-6 py-3">

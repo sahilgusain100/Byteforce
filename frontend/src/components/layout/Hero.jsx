@@ -11,7 +11,7 @@ export const Hero = () => {
       }}
     >
       {/* Dark Overlay */}
-      <div className="absolute inset-0 bg-black/50 z-0"></div>
+      <div className="absolute inset-x-0 top-0 bottom-[50px] z-0 bg-black/50"></div>
 
       {/* Main Flex Row Wrapper */}
       <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-12 w-full mx-auto">

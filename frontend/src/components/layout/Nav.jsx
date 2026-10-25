@@ -1,14 +1,17 @@
 import React from 'react'
-import { Button } from '../ui/Button'
 import { Link } from 'react-router-dom'
+import { useAuthDialog } from '../../hooks/useAuthDialog'
+import { Button } from '../ui/Button'
 
 
-const Nav = ({ variant = 'home' }) => {
+const Nav = ({ variant = 'home', cartCount = 0 }) => {
+  const { openAuth, currentUser, logout } = useAuthDialog()
+
   if (variant === 'marketplace') {
     return (
       <nav
         aria-label="Marketplace navigation"
-        className="flex flex-wrap items-center gap-x-5 gap-y-3 font-sans text-sm"
+        className="flex flex-wrap items-center gap-x-4 gap-y-3 font-sans text-sm"
       >
         <a
           className="rounded-sm text-white/85 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
@@ -23,11 +26,53 @@ const Nav = ({ variant = 'home' }) => {
           For artisans
         </Link>
         <Link
-          className="rounded-lg border border-white/60 px-4 py-2 font-semibold text-white transition hover:bg-white hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
-          to="/"
+          aria-label={`View order summary, ${cartCount} items in bag`}
+          className="rounded-lg border border-white/40 px-3 py-2 font-semibold text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+          to="/marketplace/order-summary"
         >
-          Back to home
+          Bag ({cartCount})
         </Link>
+        <Link
+          className="rounded-sm text-white/85 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+          to="/marketplace/orders"
+        >
+          Orders
+        </Link>
+        {currentUser ? (
+          <>
+            <Link
+              className="rounded-lg border border-white/40 px-3 py-2 font-semibold text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              to="/profile"
+            >
+              Profile
+            </Link>
+            <button
+              className="rounded-sm text-white/85 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              onClick={logout}
+              type="button"
+            >
+              Log out
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              className="rounded-sm text-white/85 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              onClick={() => openAuth('login')}
+              type="button"
+            >
+              Log in
+            </button>
+            <button
+              className="rounded-lg bg-white px-3 py-2 font-semibold text-primary transition hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
+              onClick={() => openAuth('signup')}
+              type="button"
+            >
+              Sign up
+            </button>
+          </>
+        )}
+      
       </nav>
     )
   }
@@ -46,8 +91,22 @@ const Nav = ({ variant = 'home' }) => {
           <option value="pun">Punjabi</option>
           <option value="hin">Hindi</option>
         </select>
-        <Button >Signup</Button>
-        <Button >login</Button>
+        {currentUser ? (
+          <>
+            <Link
+              className="rounded-lg border border-white/60 px-4 py-2 font-semibold text-white transition hover:bg-white hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              to="/profile"
+            >
+              Profile
+            </Link>
+            <Button onClick={logout}>Log out</Button>
+          </>
+        ) : (
+          <>
+            <Button onClick={() => openAuth('signup')}>Signup</Button>
+            <Button onClick={() => openAuth('login')}>Login</Button>
+          </>
+        )}
 </nav>
     </>
   )

@@ -1,17 +1,36 @@
 import React from 'react'
 import Home from './pages/Home'
 import Marketplace from './pages/Marketplace'
+import ProductDetail from './pages/ProductDetail'
+import OrderSummary from './pages/OrderSummary'
+import OrderConfirmation from './pages/OrderConfirmation'
+import ProfilePage from './pages/ProfilePage'
+import OrderHistory from './pages/OrderHistory'
+import { CartProvider } from './context/CartContext'
+import AuthDialogProvider from './context/AuthDialogProvider'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
 const App = () => {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/marketplace" element={<Marketplace />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
+    <CartProvider>
+      <BrowserRouter>
+        <AuthDialogProvider>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/marketplace" element={<Marketplace />} />
+            <Route path="/marketplace/products/:slug" element={<ProductDetail />} />
+            <Route path="/marketplace/order-summary" element={<OrderSummary />} />
+            <Route path="/marketplace/orders" element={<OrderHistory />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route
+              path="/marketplace/order-confirmation"
+              element={<OrderConfirmation />}
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </AuthDialogProvider>
+      </BrowserRouter>
+    </CartProvider>
   )
 }
 

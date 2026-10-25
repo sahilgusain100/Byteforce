@@ -1,10 +1,10 @@
 import React from 'react'
 import Navbar from '../components/layout/Navbar'
 import Hero from '../components/layout/Hero'
+import Footer from '../components/layout/Footer'
 import {
   FairOpportunitiesSection,
   FinalCtaSection,
-  Footer,
   HowItWorksSection,
   MissionSection,
   RolesSection,

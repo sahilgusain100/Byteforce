@@ -16,6 +16,9 @@ import {
   UsersRound,
   UserRoundPlus,
 } from 'lucide-react';
+import content from '../../data/local-storage.json';
+
+const { roles, skills, steps, platformGoals } = content;
 
 const icons = {
   artisan: BriefcaseBusiness,
@@ -40,134 +43,6 @@ function Icon({ name, className = '' }) {
   const IconComponent = icons[name];
   return <IconComponent aria-hidden="true" className={className} />;
 }
-
-const roles = [
-  {
-    title: "I'm an Artisan",
-    icon: 'artisan',
-    description:
-      'Showcase handmade products, find paid work, connect with customers, and keep growing your skills.',
-    action: 'Learn about the mission',
-    href: '#mission',
-    tone: 'bg-surface text-primary',
-  },
-  {
-    title: "I'm a Customer",
-    icon: 'customer',
-    description:
-      'Discover handmade products and support the people and traditions behind every creation.',
-    action: 'Explore the crafts',
-    href: '#explore-skills',
-    tone: 'bg-surface text-text-main',
-  },
-  {
-    title: "I'm an Industry Partner",
-    icon: 'partner',
-    description:
-      'Connect with artisans, share work requirements, and explore collaboration on larger orders.',
-    action: 'Explore partnership goals',
-    href: '#fair-opportunities',
-    tone: 'bg-surface text-secondary',
-  },
-  {
-    title: "I'm a Training Expert",
-    icon: 'expert',
-    description:
-      'Share your expertise, offer practical learning, and help artisans develop new skills.',
-    action: 'See the shared learning model',
-    href: '#how-it-works',
-    tone: 'bg-surface text-warning',
-  },
-];
-
-const skills = [
-  {
-    title: 'Embroidery and Phulkari',
-    icon: 'embroidery',
-    description:
-      'Intricate needlework and vivid patterns carrying generations of craft.',
-    tone: 'bg-surface text-primary',
-  },
-  {
-    title: 'Tailoring and Stitching',
-    icon: 'tailoring',
-    description:
-      'Careful cutting, fitting, mending, and made-to-measure work.',
-    tone: 'bg-surface text-text-main',
-  },
-  {
-    title: 'Homemade Food Products',
-    icon: 'food',
-    description:
-      'Small-batch foods made with care, local knowledge, and familiar flavours.',
-    tone: 'bg-surface text-secondary',
-  },
-  {
-    title: 'Handcrafted Goods',
-    icon: 'handcrafted',
-    description:
-      'Useful, beautiful objects shaped by hand and individual imagination.',
-    tone: 'bg-surface text-warning',
-  },
-  {
-    title: 'Natural Dyes and Upcycled Textiles',
-    icon: 'natural',
-    description:
-      'Thoughtful ways to give textiles new life with natural colour and reuse.',
-    tone: 'bg-surface text-text-main',
-  },
-];
-
-const steps = [
-  {
-    number: '01',
-    title: 'Share Your Skills',
-    icon: 'share',
-    description:
-      'Help artisans present their abilities, craft, and the work they are proud to make.',
-  },
-  {
-    number: '02',
-    title: 'Discover Opportunities',
-    icon: 'discover',
-    description:
-      'Create ways to connect artisans with customers, industry partners, and learning.',
-  },
-  {
-    number: '03',
-    title: 'Grow Together',
-    icon: 'grow',
-    description:
-      'Encourage collaboration, skill development, and more sustainable livelihoods.',
-  },
-];
-
-const platformGoals = [
-  {
-    title: 'Clear, indicative pricing',
-    icon: 'pricing',
-    description:
-      'Work toward transparent price guidance that recognises the time, skill, and materials behind each craft.',
-  },
-  {
-    title: 'Direct connections',
-    icon: 'connect',
-    description:
-      'Make it easier for artisans to build relationships with potential customers and partners.',
-  },
-  {
-    title: 'Collaborative orders',
-    icon: 'orders',
-    description:
-      'Help communities explore working together when a larger request calls for shared skills.',
-  },
-  {
-    title: 'Relevant training',
-    icon: 'training',
-    description:
-      'Create space for practical learning shaped around artisans’ interests and experience.',
-  },
-];
 
 function SectionHeading({
   eyebrow,
@@ -246,7 +121,7 @@ function SkillsSection() {
   return (
     <section
       aria-labelledby="skills-heading"
-      className="border-y border-border bg-surface px-5 py-20 sm:px-8 lg:py-24"
+      className="border-y border-border bg-surface px-5 py-20 sm:px-8 lg:py-24 "
       id="explore-skills"
     >
       <div className="mx-auto max-w-7xl">
@@ -467,64 +342,9 @@ function FinalCtaSection() {
   );
 }
 
-function Footer() {
-  return (
-    <footer className="bg-primary px-5 py-12 text-white sm:px-8">
-      <div className="mx-auto flex max-w-7xl flex-col gap-10 md:flex-row md:items-start md:justify-between">
-        <div className="max-w-sm">
-          <a
-            className="font-serif text-2xl font-semibold focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-            href="#top"
-          >
-            SkillBridge
-          </a>
-          <p className="mt-3 leading-7 text-white/75">
-            Connecting skills, community, and better tomorrows—one handmade
-            story at a time.
-          </p>
-        </div>
-        <nav aria-label="Footer navigation">
-          <h2 className="mb-4 font-semibold">Explore SkillBridge</h2>
-          <ul className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm text-white/75">
-            <li>
-              <a className="hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white" href="#explore-skills">
-                Skills and crafts
-              </a>
-            </li>
-            <li>
-              <a className="hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white" href="#roles">
-                Ways to participate
-              </a>
-            </li>
-            <li>
-              <a className="hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white" href="#fair-opportunities">
-                Industry partnerships
-              </a>
-            </li>
-            <li>
-              <a className="hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white" href="#how-it-works">
-                Training and learning
-              </a>
-            </li>
-            <li>
-              <a className="hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white" href="#mission">
-                Our mission
-              </a>
-            </li>
-          </ul>
-        </nav>
-      </div>
-      <div className="mx-auto mt-10 max-w-7xl border-t border-white/20 pt-5 text-sm text-white/60">
-        SkillBridge · Skills · Community · Better tomorrows
-      </div>
-    </footer>
-  );
-}
-
 export {
   FairOpportunitiesSection,
   FinalCtaSection,
-  Footer,
   HowItWorksSection,
   MissionSection,
   RolesSection,

@@ -3,6 +3,7 @@ import { ArrowLeft, MapPin, Minus, Plus, ShoppingBag, Star } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import MarketplaceLayout from '../components/layout/MarketplaceLayout'
 import { useCart } from '../hooks/useCart'
+import { useAuthDialog } from '../hooks/useAuthDialog'
 import content from '../data/local-storage.json'
 import { getProductSlug } from '../utils/marketplace'
 import {
@@ -17,6 +18,8 @@ const ProductDetail = () => {
   const { slug } = useParams()
   const navigate = useNavigate()
   const { addToCart, items } = useCart()
+  const { currentUser } = useAuthDialog()
+  const isCustomer = currentUser && (currentUser.accountType ?? 'customer') === 'customer'
   const [artisanProducts] = useState(() => {
     try {
       return getPublishedArtisanListings().map(toMarketplaceProduct)
@@ -119,11 +122,6 @@ const ProductDetail = () => {
               <p className="mt-2 leading-7 text-text-secondary">
                 {product.description}
               </p>
-              {product.reusedMaterialKg > 0 && (
-                <p className="mt-3 rounded-lg bg-surface-muted px-3 py-2 text-sm text-text-secondary">
-                  Artisan-reported reused material: {product.reusedMaterialKg} kg per item.
-                </p>
-              )}
               <p className="mt-3 text-sm leading-6 text-text-muted">
                 Each item celebrates skilled handmade work. Availability and
                 delivery details will be confirmed by the artisan after your
@@ -174,11 +172,15 @@ const ProductDetail = () => {
                 type="button"
               >
                 <ShoppingBag aria-hidden="true" className="h-4 w-4" />
-                Add to bag
+                {isCustomer ? 'Add to bag' : 'Log in to add'}
               </button>
               <button
                 className="inline-flex min-h-12 flex-1 items-center justify-center rounded-lg bg-primary px-5 py-3 font-semibold text-white transition hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 onClick={() => {
+                  if (!isCustomer) {
+                    addSelectionToBag()
+                    return
+                  }
                   addSelectionToBag()
                   navigate('/marketplace/order-summary')
                 }}
@@ -188,7 +190,7 @@ const ProductDetail = () => {
                 }
                 type="button"
               >
-                Order now
+                {isCustomer ? 'Order now' : 'Log in to order'}
               </button>
             </div>
             <p className="mt-4 text-xs leading-5 text-text-muted">

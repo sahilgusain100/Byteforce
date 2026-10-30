@@ -19,9 +19,9 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom'
 
 const App = () => {
   return (
-    <CartProvider>
-      <BrowserRouter>
-        <AuthDialogProvider>
+    <BrowserRouter>
+      <AuthDialogProvider>
+        <CartProvider>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/artisan/auth" element={<ArtisanAuthPage />} />
@@ -41,9 +41,9 @@ const App = () => {
             />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
-        </AuthDialogProvider>
-      </BrowserRouter>
-    </CartProvider>
+        </CartProvider>
+      </AuthDialogProvider>
+    </BrowserRouter>
   )
 }
 

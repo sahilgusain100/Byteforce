@@ -2,8 +2,11 @@ import { useState } from 'react'
 import { Heart, ImageOff, ShoppingBag, Star } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { getProductSlug } from '../../utils/marketplace'
+import { useAuthDialog } from '../../hooks/useAuthDialog'
 
 const ProductCard = ({ product, onAddToCart }) => {
+  const { currentUser } = useAuthDialog()
+  const isCustomer = currentUser && (currentUser.accountType ?? 'customer') === 'customer'
   const [saved, setSaved] = useState(false)
   const [imageUnavailable, setImageUnavailable] = useState(false)
   const productUrl = `/marketplace/products/${getProductSlug(product.name)}`
@@ -82,12 +85,6 @@ const ProductCard = ({ product, onAddToCart }) => {
         <p className="mt-3 border-t border-border pt-3 text-xs text-text-muted">
           {product.location}
         </p>
-        {product.reusedMaterialKg > 0 && (
-          <p className="mt-2 text-xs font-medium text-success">
-            Artisan-reported reused material: {product.reusedMaterialKg} kg/item
-          </p>
-        )}
-
         <div className="mt-3 flex items-center justify-between gap-3">
           <p className="font-serif text-xl font-semibold text-primary">
             ₹{product.price.toLocaleString('en-IN')}
@@ -116,7 +113,9 @@ const ProductCard = ({ product, onAddToCart }) => {
               : Number.isFinite(product.stock) &&
                   product.cartQuantity >= product.stock
                 ? 'All in bag'
-                : 'Add to bag'}
+                : isCustomer
+                  ? 'Add to bag'
+                  : 'Log in to add'}
           </button>
         </div>
         <Link

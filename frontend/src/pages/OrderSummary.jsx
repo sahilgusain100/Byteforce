@@ -21,11 +21,13 @@ const OrderSummary = () => {
   const navigate = useNavigate()
   const { items, itemCount, subtotal, updateQuantity, removeFromCart, placeOrderRequest } =
     useCart()
-  const { currentUser } = useAuthDialog()
+  const { currentUser, openAuth } = useAuthDialog()
   const [savedAddress, setSavedAddress] = useState(null)
   const [addressLoadComplete, setAddressLoadComplete] = useState(false)
   const [formError, setFormError] = useState('')
   const shipping = subtotal === 0 || subtotal >= 1500 ? 0 : 99
+  const isCustomer =
+    currentUser && (currentUser.accountType ?? 'customer') === 'customer'
 
   useEffect(() => {
     setAddressLoadComplete(false)
@@ -43,6 +45,11 @@ const OrderSummary = () => {
 
   const handleSubmit = (event) => {
     event.preventDefault()
+    if (!isCustomer) {
+      openAuth('login')
+      setFormError('Log in with a customer account before placing an order.')
+      return
+    }
     setFormError('')
     const formData = new FormData(event.currentTarget)
     const customer = Object.fromEntries(formData.entries())
@@ -76,7 +83,24 @@ const OrderSummary = () => {
           </p>
         </header>
 
-        {items.length ? (
+        {!isCustomer ? (
+          <section className="mt-8 rounded-2xl border border-border bg-surface px-5 py-10 text-center shadow-card sm:px-8">
+            <ShoppingBag aria-hidden="true" className="mx-auto h-9 w-9 text-secondary" />
+            <h2 className="mt-4 font-serif text-2xl font-semibold text-text-main">
+              Log in to view your bag
+            </h2>
+            <p className="mx-auto mt-2 max-w-lg leading-7 text-text-secondary">
+              Sign in with a customer account to manage your bag and send an order request.
+            </p>
+            <button
+              className="mt-6 inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-5 py-2.5 font-semibold text-white transition hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
+              onClick={() => openAuth('login')}
+              type="button"
+            >
+              Log in or create an account
+            </button>
+          </section>
+        ) : items.length ? (
           <form
             key={addressLoadComplete ? 'address-loaded' : 'address-loading'}
             className="mt-8 grid items-start gap-8 lg:grid-cols-[1fr_380px]"

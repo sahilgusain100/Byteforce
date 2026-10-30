@@ -95,9 +95,8 @@ export function toMarketplaceProduct(listing) {
     rating: 'New',
     image: listing.image || '',
     imageAlt: `${listing.title}, handmade by ${listing.artisan || 'a SkillBridge artisan'}`,
-    badge: listing.reusedMaterialKg > 0 ? 'Includes reused material' : 'New artisan listing',
+    badge: 'New artisan listing',
     stock: listing.stock,
-    reusedMaterialKg: listing.reusedMaterialKg || 0,
     listingId: listing.id,
   }
 }
@@ -117,7 +116,6 @@ export function saveArtisanListing(user, listing) {
     laborHours: Number(listing.laborHours) || 0,
     hourlyRate: Number(listing.hourlyRate) || 0,
     packagingCost: Number(listing.packagingCost) || 0,
-    reusedMaterialKg: Number(listing.reusedMaterialKg) || 0,
     image: listing.image?.trim() ?? '',
     artisan: user.name,
     location: getArtisanShop(user)?.location || 'India',

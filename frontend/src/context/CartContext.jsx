@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { CartContext } from './cart-context'
 import { saveOrderHistoryEntry } from '../utils/order-storage'
+import { useAuthDialog } from '../hooks/useAuthDialog'
 
 const CART_STORAGE_KEY = 'skillbridge-cart'
 
@@ -15,7 +16,11 @@ function readStoredValue(key, fallback) {
 }
 
 export const CartProvider = ({ children }) => {
+  const { currentUser, openAuth } = useAuthDialog()
+  const isCustomer =
+    currentUser && (currentUser.accountType ?? 'customer') === 'customer'
   const [items, setItems] = useState(() => {
+    if (!isCustomer) return []
     const storedItems = readStoredValue(CART_STORAGE_KEY, [])
     return Array.isArray(storedItems) ? storedItems : []
   })
@@ -23,13 +28,23 @@ export const CartProvider = ({ children }) => {
 
   useEffect(() => {
     try {
-      window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items))
+      if (isCustomer) {
+        window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items))
+      } else {
+        if (items.length) setItems([])
+        window.localStorage.removeItem(CART_STORAGE_KEY)
+      }
     } catch (error) {
       console.error('Unable to save the marketplace bag.', error)
     }
-  }, [items])
+  }, [isCustomer, items])
 
   const addToCart = useCallback((product, quantity = 1) => {
+    if (!isCustomer) {
+      openAuth('login')
+      return
+    }
+
     setItems((currentItems) => {
       const existingItem = currentItems.find((item) => item.name === product.name)
       if (existingItem) {
@@ -51,7 +66,7 @@ export const CartProvider = ({ children }) => {
         ? [...currentItems, { ...product, quantity: boundedQuantity }]
         : currentItems
     })
-  }, [])
+  }, [isCustomer, openAuth])
 
   const updateQuantity = useCallback((productName, quantity) => {
     setItems((currentItems) =>
@@ -79,6 +94,11 @@ export const CartProvider = ({ children }) => {
   const clearCart = useCallback(() => setItems([]), [])
 
   const placeOrderRequest = useCallback((customer, user) => {
+    if (!user || (user.accountType ?? 'customer') !== 'customer') {
+      openAuth('login')
+      throw new Error('Log in with a customer account before placing an order.')
+    }
+
     const subtotal = items.reduce(
       (sum, item) => sum + item.price * item.quantity,
       0,
@@ -97,7 +117,7 @@ export const CartProvider = ({ children }) => {
     setLatestOrder(order)
     clearCart()
     return order
-  }, [clearCart, items])
+  }, [clearCart, items, openAuth])
 
   const value = useMemo(
     () => ({

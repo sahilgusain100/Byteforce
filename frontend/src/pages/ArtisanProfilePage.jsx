@@ -365,7 +365,6 @@ const ArtisanProfilePage = () => {
         laborHours: formData.get('laborHours'),
         hourlyRate: formData.get('hourlyRate'),
         packagingCost: formData.get('packagingCost'),
-        reusedMaterialKg: formData.get('reusedMaterialKg'),
         image: formData.get('image'),
       })
       setSavedListingState((existingState) => ({
@@ -1139,22 +1138,6 @@ const ArtisanProfilePage = () => {
                       type="url"
                     />
                   </label>
-                  <label className="text-sm font-medium text-text-main">
-                    Reused material per item (kg) <span className="font-normal text-text-muted">(optional)</span>
-                    <input
-                      className={inputClass}
-                      min="0"
-                      name="reusedMaterialKg"
-                      placeholder="0"
-                      step="0.01"
-                      type="number"
-                    />
-                  </label>
-                  <p className="text-xs leading-5 text-text-muted sm:col-span-2">
-                    If entered, the reused-material amount will be shown as
-                    artisan-provided product information. No carbon savings are
-                    estimated.
-                  </p>
                   <button
                     className="min-h-11 rounded-lg bg-primary px-4 py-2.5 font-semibold text-white transition hover:bg-primary-hover sm:col-span-2"
                     type="submit"
@@ -1182,11 +1165,6 @@ const ArtisanProfilePage = () => {
                           <td className="px-4 py-4">
                             <p className="font-semibold text-text-main">{listing.title}</p>
                             <p className="mt-1 text-xs text-text-muted">{listing.category}</p>
-                            {listing.reusedMaterialKg > 0 && (
-                              <p className="mt-1 text-xs text-success">
-                                {listing.reusedMaterialKg} kg reused material / item
-                              </p>
-                            )}
                           </td>
                           <td className="px-4 py-4 text-text-secondary">
                             ₹{listing.price.toLocaleString('en-IN')}

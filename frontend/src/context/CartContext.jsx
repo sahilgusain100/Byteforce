@@ -35,11 +35,21 @@ export const CartProvider = ({ children }) => {
       if (existingItem) {
         return currentItems.map((item) =>
           item.name === product.name
-            ? { ...item, quantity: item.quantity + quantity }
+            ? {
+                ...item,
+                quantity: Number.isFinite(product.stock)
+                  ? Math.min(item.quantity + quantity, product.stock)
+                  : item.quantity + quantity,
+              }
             : item,
         )
       }
-      return [...currentItems, { ...product, quantity }]
+      const boundedQuantity = Number.isFinite(product.stock)
+        ? Math.min(quantity, product.stock)
+        : quantity
+      return boundedQuantity > 0
+        ? [...currentItems, { ...product, quantity: boundedQuantity }]
+        : currentItems
     })
   }, [])
 
@@ -48,7 +58,14 @@ export const CartProvider = ({ children }) => {
       quantity < 1
         ? currentItems.filter((item) => item.name !== productName)
         : currentItems.map((item) =>
-            item.name === productName ? { ...item, quantity } : item,
+            item.name === productName
+              ? {
+                  ...item,
+                  quantity: Number.isFinite(item.stock)
+                    ? Math.min(quantity, item.stock)
+                    : quantity,
+                }
+              : item,
           ),
     )
   }, [])

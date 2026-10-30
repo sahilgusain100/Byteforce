@@ -280,6 +280,19 @@ async function hashPassword(password, salt) {
   return new Uint8Array(hash)
 }
 
+export function getRegisteredArtisans() {
+  return readRegisteredUsers()
+    .filter((user) => (user.accountType ?? 'customer') === 'artisan')
+    .map((user) => ({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      artCategory: user.artCategory,
+      experience: user.experience,
+    }))
+}
+
 export async function authenticateUser(email, password, accountType) {
   const normalizedEmail = email.trim().toLowerCase()
   const user = readRegisteredUsers().find(
@@ -310,6 +323,10 @@ export async function authenticateUser(email, password, accountType) {
     artCategory: user.artCategory,
     experience: user.experience,
     bio: user.bio,
+    expertise: user.expertise,
+    contactName: user.contactName,
+    industry: user.industry,
+    companyAddress: user.companyAddress,
   }
 }
 
@@ -365,6 +382,11 @@ export async function saveRegisteredUser(profile) {
     artCategory: profile.artCategory?.trim() || existingUser?.artCategory,
     experience: profile.experience?.trim() || existingUser?.experience,
     bio: profile.bio?.trim() || existingUser?.bio,
+    expertise: profile.expertise?.trim() || existingUser?.expertise,
+    contactName: profile.contactName?.trim() || existingUser?.contactName,
+    industry: profile.industry?.trim() || existingUser?.industry,
+    companyAddress:
+      profile.companyAddress?.trim() || existingUser?.companyAddress,
     passwordSalt: bytesToBase64(salt),
     passwordHash: bytesToBase64(passwordHash),
   }
@@ -393,5 +415,9 @@ export async function saveRegisteredUser(profile) {
     artCategory: newUser.artCategory,
     experience: newUser.experience,
     bio: newUser.bio,
+    expertise: newUser.expertise,
+    contactName: newUser.contactName,
+    industry: newUser.industry,
+    companyAddress: newUser.companyAddress,
   }
 }

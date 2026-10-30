@@ -79,6 +79,29 @@ export function getArtisanListings(user) {
     .sort((first, second) => second.createdAt.localeCompare(first.createdAt))
 }
 
+export function getPublishedArtisanListings() {
+  return readListings().filter((listing) => listing.status === 'Published')
+}
+
+export function toMarketplaceProduct(listing) {
+  return {
+    id: listing.id,
+    name: listing.title,
+    category: listing.category,
+    description: listing.description,
+    price: listing.price,
+    artisan: listing.artisan || 'SkillBridge artisan',
+    location: listing.location || 'India',
+    rating: 'New',
+    image: listing.image || '',
+    imageAlt: `${listing.title}, handmade by ${listing.artisan || 'a SkillBridge artisan'}`,
+    badge: listing.reusedMaterialKg > 0 ? 'Includes reused material' : 'New artisan listing',
+    stock: listing.stock,
+    reusedMaterialKg: listing.reusedMaterialKg || 0,
+    listingId: listing.id,
+  }
+}
+
 export function saveArtisanListing(user, listing) {
   const ownerId = getOwnerId(user)
   const normalizedListing = {
@@ -90,6 +113,14 @@ export function saveArtisanListing(user, listing) {
     description: listing.description.trim(),
     price: Number(listing.price),
     stock: Number(listing.stock),
+    materialCost: Number(listing.materialCost) || 0,
+    laborHours: Number(listing.laborHours) || 0,
+    hourlyRate: Number(listing.hourlyRate) || 0,
+    packagingCost: Number(listing.packagingCost) || 0,
+    reusedMaterialKg: Number(listing.reusedMaterialKg) || 0,
+    image: listing.image?.trim() ?? '',
+    artisan: user.name,
+    location: getArtisanShop(user)?.location || 'India',
     createdAt: new Date().toISOString(),
     status: 'Draft',
   }
@@ -106,4 +137,35 @@ export function saveArtisanListing(user, listing) {
   }
 
   return normalizedListing
+}
+
+export function publishArtisanListing(user, listingId) {
+  const ownerId = getOwnerId(user)
+  const listings = readListings()
+  const index = listings.findIndex(
+    (listing) => listing.id === listingId && listing.ownerId === ownerId,
+  )
+
+  if (index < 0) {
+    throw new Error('This product draft could not be found. Refresh and try again.')
+  }
+  if (listings[index].stock < 1) {
+    throw new Error('Add at least one available item before publishing this product.')
+  }
+
+  const updatedListing = {
+    ...listings[index],
+    status: 'Published',
+    publishedAt: new Date().toISOString(),
+  }
+  listings[index] = updatedListing
+
+  try {
+    window.localStorage.setItem(LISTINGS_KEY, JSON.stringify(listings))
+  } catch (error) {
+    console.error('Unable to publish artisan listing.', error)
+    throw new Error('Your product could not be published in this browser.')
+  }
+
+  return updatedListing
 }

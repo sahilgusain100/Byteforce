@@ -28,11 +28,14 @@ import {
   getArtisanListings,
   saveArtisanShop,
   saveArtisanListing,
+  publishArtisanListing,
 } from '../utils/artisan-storage'
 import {
   getArtisanOrderHistory,
   updateArtisanOrderStatus,
 } from '../utils/order-storage'
+import { getExpertCourses } from '../utils/training-storage'
+import { CourseVideoDisclosure } from '../components/training/CourseVideo'
 
 const sections = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -43,7 +46,7 @@ const sections = [
   { id: 'payments', label: 'Payment History', icon: WalletCards },
 ]
 
-const courses = [
+const baseCourses = [
   {
     id: 'phulkari-foundations',
     category: 'Embroidery',
@@ -130,6 +133,27 @@ const courses = [
   },
 ]
 
+function loadPublishedCourses() {
+  try {
+    const courses = getExpertCourses().map((course) => ({
+      ...course,
+      lessons: (course.lessons ?? []).map((lesson) =>
+        typeof lesson === 'string'
+          ? { title: lesson, videoUrl: '' }
+          : lesson,
+      ),
+      outcomes: Array.isArray(course.outcomes) ? course.outcomes : [],
+    }))
+    return { courses, error: '' }
+  } catch (error) {
+    console.error('Unable to load expert-created courses.', error)
+    return {
+      courses: [],
+      error: error.message || 'Published expert courses could not be loaded.',
+    }
+  }
+}
+
 const inputClass =
   'mt-1.5 w-full rounded-lg border border-border bg-white px-3.5 py-3 text-text-main outline-none transition placeholder:text-text-muted focus:border-secondary focus:ring-2 focus:ring-secondary/25'
 
@@ -179,6 +203,11 @@ function getStatusStyle(status) {
 const ArtisanProfilePage = () => {
   const { currentUser } = useAuthDialog()
   const [activeSection, setActiveSection] = useState('dashboard')
+  const [publishedCourseState, setPublishedCourseState] =
+    useState(loadPublishedCourses)
+  const { courses: expertCourses, error: publishedCourseError } =
+    publishedCourseState
+  const courses = [...baseCourses, ...expertCourses]
   const [selectedCourse, setSelectedCourse] = useState(null)
   const [courseSearch, setCourseSearch] = useState('')
   const [courseCategory, setCourseCategory] = useState('All courses')
@@ -188,6 +217,13 @@ const ArtisanProfilePage = () => {
   const [showListingForm, setShowListingForm] = useState(false)
   const [listingNotice, setListingNotice] = useState('')
   const [listingError, setListingError] = useState(false)
+  const [pricingInputs, setPricingInputs] = useState({
+    materialCost: '',
+    laborHours: '',
+    hourlyRate: '',
+    packagingCost: '',
+  })
+  const [listingPrice, setListingPrice] = useState('')
   const [artisanOrders, setArtisanOrders] = useState([])
   const [ordersError, setOrdersError] = useState('')
   const [orderNotice, setOrderNotice] = useState('')
@@ -205,10 +241,31 @@ const ArtisanProfilePage = () => {
   const shopName = shop?.name
 
   useEffect(() => {
-    const result = loadArtisanOrders(currentUser, shopName)
-    setArtisanOrders(result.orders)
-    setOrdersError(result.error)
+    const refreshOrders = () => {
+      const result = loadArtisanOrders(currentUser, shopName)
+      setArtisanOrders(result.orders)
+      setOrdersError(result.error)
+    }
+
+    refreshOrders()
+    const intervalId = window.setInterval(refreshOrders, 2000)
+    window.addEventListener('storage', refreshOrders)
+
+    return () => {
+      window.clearInterval(intervalId)
+      window.removeEventListener('storage', refreshOrders)
+    }
   }, [currentUser, shopName])
+
+  useEffect(() => {
+    const refreshCourses = () => {
+      const courseState = loadPublishedCourses()
+      setPublishedCourseState(courseState)
+    }
+
+    window.addEventListener('storage', refreshCourses)
+    return () => window.removeEventListener('storage', refreshCourses)
+  }, [])
 
   if (!currentUser) {
     return <Navigate replace to="/artisan/auth" />
@@ -231,6 +288,9 @@ const ArtisanProfilePage = () => {
         course.instructor,
         course.expertise,
         course.level,
+        ...course.lessons.map((lesson) =>
+          typeof lesson === 'string' ? lesson : lesson.title,
+        ),
       ]
         .join(' ')
         .toLowerCase()
@@ -301,19 +361,64 @@ const ArtisanProfilePage = () => {
         description: formData.get('description'),
         price: formData.get('price'),
         stock: formData.get('stock'),
+        materialCost: formData.get('materialCost'),
+        laborHours: formData.get('laborHours'),
+        hourlyRate: formData.get('hourlyRate'),
+        packagingCost: formData.get('packagingCost'),
+        reusedMaterialKg: formData.get('reusedMaterialKg'),
+        image: formData.get('image'),
       })
       setSavedListingState((existingState) => ({
         listings: [listing, ...existingState.listings],
         error: '',
       }))
       setShowListingForm(false)
-      setListingNotice('Your product was saved as a draft.')
+      setPricingInputs({
+        materialCost: '',
+        laborHours: '',
+        hourlyRate: '',
+        packagingCost: '',
+      })
+      setListingPrice('')
+      setListingNotice('Your product was saved as a draft. Publish it when it is ready for buyers.')
       event.currentTarget.reset()
     } catch (error) {
       setListingNotice(error.message || 'Unable to save this listing.')
       setListingError(true)
     }
   }
+
+  const handlePublishListing = (listingId) => {
+    setListingNotice('')
+    setListingError(false)
+    try {
+      const updatedListing = publishArtisanListing(currentUser, listingId)
+      setSavedListingState((state) => ({
+        listings: state.listings.map((listing) =>
+          listing.id === listingId ? updatedListing : listing,
+        ),
+        error: '',
+      }))
+      setListingNotice('Your product is now published in the marketplace.')
+    } catch (error) {
+      console.error('Unable to publish product listing.', error)
+      setListingNotice(error.message || 'Unable to publish this product.')
+      setListingError(true)
+    }
+  }
+
+  const productionCost =
+    Number(pricingInputs.materialCost || 0) +
+    Number(pricingInputs.laborHours || 0) *
+      Number(pricingInputs.hourlyRate || 0) +
+    Number(pricingInputs.packagingCost || 0)
+  const suggestedPriceRange =
+    productionCost > 0
+      ? [
+          Math.ceil((productionCost * 1.2) / 10) * 10,
+          Math.ceil((productionCost * 1.3) / 10) * 10,
+        ]
+      : null
 
   return (
     <ArtisanLayout>
@@ -554,6 +659,15 @@ const ArtisanProfilePage = () => {
                 </p>
               </div>
 
+              {publishedCourseError && (
+                <p
+                  className="mb-5 rounded-lg border border-error/30 bg-red-50 px-4 py-3 text-sm text-error"
+                  role="alert"
+                >
+                  {publishedCourseError}
+                </p>
+              )}
+
               <div className="mb-6 grid gap-3 md:grid-cols-[minmax(0,1fr)_15rem]">
                 <label className="relative block">
                   <span className="sr-only">Search courses and experts</span>
@@ -596,7 +710,7 @@ const ArtisanProfilePage = () => {
                 <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
                   {filteredCourses.map((course) => {
                   const isOpen = selectedCourse === course.id
-                  const Icon = course.icon
+                    const Icon = course.icon ?? GraduationCap
                   return (
                     <article
                       className={`flex h-full flex-col rounded-xl border bg-background p-5 transition ${
@@ -694,11 +808,26 @@ const ArtisanProfilePage = () => {
                             <h4 className="font-semibold text-text-main">Course outline</h4>
                             <ol className="mt-3 space-y-2">
                               {course.lessons.map((lesson, index) => (
-                                <li className="flex items-start gap-3 text-sm leading-6 text-text-secondary" key={lesson}>
+                                <li
+                                  className="flex items-start gap-3 text-sm leading-6 text-text-secondary"
+                                  key={`${index}-${typeof lesson === 'string' ? lesson : lesson.title}`}
+                                >
                                   <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface font-semibold text-primary">
                                     {index + 1}
                                   </span>
-                                  {lesson}
+                                  <div className="min-w-0 flex-1">
+                                    <p>
+                                      {typeof lesson === 'string'
+                                        ? lesson
+                                        : lesson.title}
+                                    </p>
+                                    {lesson.videoUrl && (
+                                      <CourseVideoDisclosure
+                                        title={lesson.title}
+                                        url={lesson.videoUrl}
+                                      />
+                                    )}
+                                  </div>
                                 </li>
                               ))}
                             </ol>
@@ -716,7 +845,9 @@ const ArtisanProfilePage = () => {
                           </div>
                         </div>
                         <p className="mt-5 border-t border-border pt-4 text-xs leading-5 text-text-muted">
-                          Course catalog preview: expert profiles and lesson video playback will be added later.
+                          Course videos are provided by the expert and play here
+                          when opened. Expert profiles and course progress will
+                          be added later.
                         </p>
                       </div>
                     ))}
@@ -914,7 +1045,7 @@ const ArtisanProfilePage = () => {
                   onSubmit={handleCreateListing}
                 >
                   <h3 className="font-serif text-xl font-semibold text-text-main sm:col-span-2">
-                    New product draft
+                    New product listing
                   </h3>
                   <label className="text-sm font-medium text-text-main">
                     Product name
@@ -925,35 +1056,124 @@ const ArtisanProfilePage = () => {
                     <input className={inputClass} defaultValue={shop?.category || currentUser.artCategory || ''} maxLength={60} name="category" placeholder="Product category" required />
                   </label>
                   <label className="text-sm font-medium text-text-main">
-                    Price (₹)
-                    <input className={inputClass} min="1" name="price" placeholder="1200" required type="number" />
+                    Your selling price (₹)
+                    <input
+                      className={inputClass}
+                      min="1"
+                      name="price"
+                      onChange={(event) => setListingPrice(event.target.value)}
+                      placeholder="1200"
+                      required
+                      type="number"
+                      value={listingPrice}
+                    />
                   </label>
                   <label className="text-sm font-medium text-text-main">
                     Available quantity
                     <input className={inputClass} min="0" name="stock" placeholder="1" required type="number" />
                   </label>
+                  <fieldset className="rounded-lg border border-border bg-white p-4 sm:col-span-2">
+                    <legend className="px-1 text-sm font-semibold text-text-main">
+                      Cost-based price guide (optional)
+                    </legend>
+                    <p className="mb-3 text-xs leading-5 text-text-muted">
+                      An editable estimate using your costs and a 20–30% allowance
+                      for your time and business. This is not a market quote.
+                    </p>
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                      {[
+                        ['materialCost', 'Materials per item (₹)', '0.01'],
+                        ['laborHours', 'Hours per item', '0.01'],
+                        ['hourlyRate', 'Your hourly rate (₹)', '1'],
+                        ['packagingCost', 'Packaging per item (₹)', '0.01'],
+                      ].map(([name, label, step]) => (
+                        <label className="text-xs font-medium text-text-secondary" key={name}>
+                          {label}
+                          <input
+                            className={inputClass}
+                            min="0"
+                            name={name}
+                            onChange={(event) =>
+                              setPricingInputs((values) => ({
+                                ...values,
+                                [name]: event.target.value,
+                              }))
+                            }
+                            placeholder="0"
+                            step={step}
+                            type="number"
+                            value={pricingInputs[name]}
+                          />
+                        </label>
+                      ))}
+                    </div>
+                    {suggestedPriceRange && (
+                      <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-surface-muted p-3">
+                        <p className="text-sm text-text-secondary">
+                          Cost-based guide:{' '}
+                          <strong className="text-text-main">
+                            ₹{suggestedPriceRange[0].toLocaleString('en-IN')}–
+                            ₹{suggestedPriceRange[1].toLocaleString('en-IN')}
+                          </strong>
+                        </p>
+                        <button
+                          className="rounded-md border border-primary px-3 py-1.5 text-xs font-semibold text-primary hover:bg-white"
+                          onClick={() => setListingPrice(String(suggestedPriceRange[0]))}
+                          type="button"
+                        >
+                          Use lower estimate
+                        </button>
+                      </div>
+                    )}
+                  </fieldset>
                   <label className="text-sm font-medium text-text-main sm:col-span-2">
                     Product description
                     <textarea className={inputClass} maxLength={500} name="description" placeholder="Materials, process, size, and what makes it special" required rows="3" />
                   </label>
+                  <label className="text-sm font-medium text-text-main">
+                    Product image URL <span className="font-normal text-text-muted">(optional)</span>
+                    <input
+                      className={inputClass}
+                      name="image"
+                      placeholder="https://..."
+                      type="url"
+                    />
+                  </label>
+                  <label className="text-sm font-medium text-text-main">
+                    Reused material per item (kg) <span className="font-normal text-text-muted">(optional)</span>
+                    <input
+                      className={inputClass}
+                      min="0"
+                      name="reusedMaterialKg"
+                      placeholder="0"
+                      step="0.01"
+                      type="number"
+                    />
+                  </label>
+                  <p className="text-xs leading-5 text-text-muted sm:col-span-2">
+                    If entered, the reused-material amount will be shown as
+                    artisan-provided product information. No carbon savings are
+                    estimated.
+                  </p>
                   <button
                     className="min-h-11 rounded-lg bg-primary px-4 py-2.5 font-semibold text-white transition hover:bg-primary-hover sm:col-span-2"
                     type="submit"
                   >
-                    Save product draft
+                    Save as draft
                   </button>
                 </form>
               )}
 
               {shop && listings.length ? (
                 <div className="overflow-x-auto rounded-xl border border-border">
-                  <table className="w-full min-w-[42rem] text-left text-sm">
+                  <table className="w-full min-w-[48rem] text-left text-sm">
                     <thead className="bg-background text-text-muted">
                       <tr>
                         <th className="px-4 py-3 font-semibold">Product</th>
                         <th className="px-4 py-3 font-semibold">Price</th>
                         <th className="px-4 py-3 font-semibold">Stock</th>
                         <th className="px-4 py-3 font-semibold">Status</th>
+                        <th className="px-4 py-3 font-semibold">Marketplace</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
@@ -962,6 +1182,11 @@ const ArtisanProfilePage = () => {
                           <td className="px-4 py-4">
                             <p className="font-semibold text-text-main">{listing.title}</p>
                             <p className="mt-1 text-xs text-text-muted">{listing.category}</p>
+                            {listing.reusedMaterialKg > 0 && (
+                              <p className="mt-1 text-xs text-success">
+                                {listing.reusedMaterialKg} kg reused material / item
+                              </p>
+                            )}
                           </td>
                           <td className="px-4 py-4 text-text-secondary">
                             ₹{listing.price.toLocaleString('en-IN')}
@@ -971,6 +1196,21 @@ const ArtisanProfilePage = () => {
                             <span className="rounded-full bg-surface-muted px-3 py-1 text-xs font-semibold text-secondary">
                               {listing.status}
                             </span>
+                          </td>
+                          <td className="px-4 py-4">
+                            {listing.status === 'Published' ? (
+                              <span className="text-xs font-medium text-success">
+                                Visible to buyers
+                              </span>
+                            ) : (
+                              <button
+                                className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white transition hover:bg-primary-hover"
+                                onClick={() => handlePublishListing(listing.id)}
+                                type="button"
+                              >
+                                Publish
+                              </button>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -1102,7 +1342,11 @@ const ArtisanProfilePage = () => {
                           </div>
 
                           <div className="rounded-lg border border-border bg-surface p-4">
-                            <h4 className="font-semibold text-text-main">Customer and delivery</h4>
+                            <h4 className="font-semibold text-text-main">
+                              {order.source === 'industry'
+                                ? 'Industry contact and delivery'
+                                : 'Customer and delivery'}
+                            </h4>
                             <div className="mt-3 space-y-2.5 text-sm text-text-secondary">
                               <p className="font-medium text-text-main">
                                 {customer.fullName || 'Customer'}
@@ -1131,7 +1375,11 @@ const ArtisanProfilePage = () => {
                               )}
                               {customer.note && (
                                 <p className="rounded-md bg-background p-3 leading-6">
-                                  <span className="font-semibold text-text-main">Customer note: </span>
+                                  <span className="font-semibold text-text-main">
+                                    {order.source === 'industry'
+                                      ? 'Industry request: '
+                                      : 'Customer note: '}
+                                  </span>
                                   {customer.note}
                                 </p>
                               )}

@@ -54,6 +54,8 @@ export function getOrderHistory(user) {
       return {
         id: order.id,
         createdAt: order.createdAt,
+        deadline: order.deadline,
+        specifications: order.specifications ?? '',
         items: order.items,
         subtotal: order.subtotal,
         shipping: order.shipping,
@@ -77,7 +79,9 @@ function getOrdersForArtisan(orders, artisan) {
 
   return orders
     .map((order) => {
+      const assignedToArtisan = order.assignedArtisanId === ownerId
       const items = (order.items ?? []).filter((item) =>
+        assignedToArtisan ||
         artisanNames.includes(item.artisan?.trim().toLocaleLowerCase()),
       )
       if (!items.length) return null
@@ -85,6 +89,7 @@ function getOrdersForArtisan(orders, artisan) {
       return {
         id: order.id,
         createdAt: order.createdAt,
+        source: order.source ?? 'marketplace',
         items,
         subtotal: items.reduce((total, item) => total + item.price * item.quantity, 0),
         status: order.artisanStatuses?.[ownerId] ?? 'Awaiting response',
@@ -97,6 +102,26 @@ function getOrdersForArtisan(orders, artisan) {
 
 export function getArtisanOrderHistory(artisan) {
   return getOrdersForArtisan(readOrderHistory(), artisan)
+}
+
+export function getIndustryOrderHistory(industry) {
+  const ownerId = getOwnerId(industry)
+  return readOrderHistory()
+    .filter((order) => order.ownerId === ownerId && order.source === 'industry')
+    .sort((first, second) => second.createdAt.localeCompare(first.createdAt))
+    .map((order) => ({
+      id: order.id,
+      createdAt: order.createdAt,
+      deadline: order.deadline,
+      specifications: order.specifications ?? '',
+      items: order.items,
+      subtotal: order.subtotal,
+      total: order.total,
+      assignedArtisan: order.assignedArtisan ?? {},
+      status:
+        order.artisanStatuses?.[order.assignedArtisanId] ??
+        'Awaiting response',
+    }))
 }
 
 export function updateArtisanOrderStatus(artisan, orderId, status) {
@@ -143,7 +168,12 @@ export function saveOrderHistoryEntry(order, user) {
   const historyEntry = {
     id: order.id,
     ownerId,
+    source: order.source ?? 'marketplace',
+    assignedArtisanId: order.assignedArtisanId ?? null,
+    assignedArtisan: order.assignedArtisan ?? null,
     createdAt: order.createdAt,
+    deadline: order.deadline ?? null,
+    specifications: order.specifications?.trim() ?? '',
     items: order.items.map(({ name, category, artisan, price, quantity }) => ({
       name,
       category,
@@ -158,6 +188,8 @@ export function saveOrderHistoryEntry(order, user) {
       fullName: order.customer.fullName?.trim() ?? '',
       phone: order.customer.phone?.trim() ?? '',
       email: order.customer.email?.trim().toLowerCase() ?? '',
+      companyName: order.customer.companyName?.trim() ?? '',
+      contactName: order.customer.contactName?.trim() ?? '',
       address: order.customer.address?.trim() ?? '',
       city: order.customer.city?.trim() ?? '',
       state: order.customer.state?.trim() ?? '',

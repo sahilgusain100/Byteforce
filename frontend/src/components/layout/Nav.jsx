@@ -7,7 +7,13 @@ import { Button } from '../ui/Button'
 const Nav = ({ variant = 'home', cartCount = 0 }) => {
   const { openAuth, currentUser, logout } = useAuthDialog()
   const profilePath =
-    currentUser?.accountType === 'artisan' ? '/artisan/profile' : '/profile'
+    currentUser?.accountType === 'artisan'
+      ? '/artisan/profile'
+      : currentUser?.accountType === 'expert'
+        ? '/expert/dashboard'
+        : currentUser?.accountType === 'industry'
+          ? '/industry/dashboard'
+          : '/profile'
 
   if (variant === 'marketplace') {
     return (
@@ -46,7 +52,13 @@ const Nav = ({ variant = 'home', cartCount = 0 }) => {
               className="rounded-lg border border-white/40 px-3 py-2 font-semibold text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
               to={profilePath}
             >
-              {currentUser.accountType === 'artisan' ? 'Artisan profile' : 'Profile'}
+              {currentUser.accountType === 'artisan'
+                ? 'Artisan profile'
+                : currentUser.accountType === 'expert'
+                  ? 'Expert studio'
+                  : currentUser.accountType === 'industry'
+                    ? 'Industry workspace'
+                  : 'Profile'}
             </Link>
             <button
               className="rounded-sm text-white/85 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"

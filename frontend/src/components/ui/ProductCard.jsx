@@ -11,7 +11,7 @@ const ProductCard = ({ product, onAddToCart }) => {
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-card-hover">
       <div className="relative aspect-[4/3] overflow-hidden bg-surface-muted">
-        {imageUnavailable ? (
+        {!product.image || imageUnavailable ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 text-text-muted">
             <ImageOff aria-hidden="true" className="h-8 w-8" />
             <span className="text-sm">Product image unavailable</span>
@@ -69,12 +69,24 @@ const ProductCard = ({ product, onAddToCart }) => {
         <p className="mt-1 text-xs text-text-muted">
           By {product.artisan}
         </p>
+        {Number.isFinite(product.stock) && (
+          <p className="mt-1 text-xs font-medium text-text-muted">
+            {product.stock > 0
+              ? `${product.stock} available`
+              : 'Currently out of stock'}
+          </p>
+        )}
         <p className="mt-3 flex-1 text-sm leading-6 text-text-secondary">
           {product.description}
         </p>
         <p className="mt-3 border-t border-border pt-3 text-xs text-text-muted">
           {product.location}
         </p>
+        {product.reusedMaterialKg > 0 && (
+          <p className="mt-2 text-xs font-medium text-success">
+            Artisan-reported reused material: {product.reusedMaterialKg} kg/item
+          </p>
+        )}
 
         <div className="mt-3 flex items-center justify-between gap-3">
           <p className="font-serif text-xl font-semibold text-primary">
@@ -82,12 +94,29 @@ const ProductCard = ({ product, onAddToCart }) => {
           </p>
           <button
             aria-label={`Add ${product.name} to bag`}
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-primary px-3 text-sm font-semibold text-white transition hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-primary px-3 text-sm font-semibold text-white transition hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={
+              product.stock === 0 ||
+              (Number.isFinite(product.stock) &&
+                product.cartQuantity >= product.stock)
+            }
             onClick={() => onAddToCart(product)}
+            title={
+              product.stock === 0
+                ? 'This product is out of stock'
+                : product.cartQuantity >= product.stock
+                  ? 'You have added all available items to your bag'
+                  : undefined
+            }
             type="button"
           >
             <ShoppingBag aria-hidden="true" className="h-4 w-4" />
-            Add to bag
+            {product.stock === 0
+              ? 'Out of stock'
+              : Number.isFinite(product.stock) &&
+                  product.cartQuantity >= product.stock
+                ? 'All in bag'
+                : 'Add to bag'}
           </button>
         </div>
         <Link

@@ -1,18 +1,59 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import MarketplaceLayout from '../components/layout/MarketplaceLayout'
 import FeaturedCraftCarousel from '../components/marketplace/FeaturedCraftCarousel'
 import MarketplaceProducts from '../components/marketplace/MarketplaceProducts'
 import { useCart } from '../hooks/useCart'
+import {
+  getPublishedArtisanListings,
+  toMarketplaceProduct,
+} from '../utils/artisan-storage'
 import content from '../data/local-storage.json'
 
-const { products, categories } = content.marketplace
-const featuredProducts = products.slice(0, 3)
+const { products: sampleProducts, categories: sampleCategories } = content.marketplace
+const featuredProducts = sampleProducts.slice(0, 3)
+
+function readArtisanProducts() {
+  try {
+    return {
+      products: getPublishedArtisanListings().map(toMarketplaceProduct),
+      error: '',
+    }
+  } catch (error) {
+    console.error('Unable to load artisan marketplace listings.', error)
+    return {
+      products: [],
+      error: error.message || 'Artisan listings could not be loaded.',
+    }
+  }
+}
 
 const Marketplace = () => {
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState('All crafts')
   const [sortOrder, setSortOrder] = useState('featured')
-  const { addToCart, itemCount } = useCart()
+  const [artisanProductState, setArtisanProductState] = useState(readArtisanProducts)
+  const { addToCart, itemCount, items } = useCart()
+  const products = useMemo(
+    () => [...sampleProducts, ...artisanProductState.products],
+    [artisanProductState.products],
+  )
+  const categories = useMemo(
+    () => [
+      ...sampleCategories,
+      ...new Set(
+        artisanProductState.products
+          .map((product) => product.category)
+          .filter((category) => !sampleCategories.includes(category)),
+      ),
+    ],
+    [artisanProductState.products],
+  )
+
+  useEffect(() => {
+    const refreshListings = () => setArtisanProductState(readArtisanProducts())
+    window.addEventListener('storage', refreshListings)
+    return () => window.removeEventListener('storage', refreshListings)
+  }, [])
 
   const visibleProducts = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -36,7 +77,7 @@ const Marketplace = () => {
       return filtered.sort((first, second) => second.price - first.price)
     }
     return filtered
-  }, [activeCategory, search, sortOrder])
+  }, [activeCategory, products, search, sortOrder])
 
   const resetFilters = () => {
     setSearch('')
@@ -56,6 +97,14 @@ const Marketplace = () => {
             products={featuredProducts}
           />
         )}
+        {artisanProductState.error && (
+          <p
+            className="mx-auto mt-6 max-w-7xl rounded-lg border border-error/30 bg-red-50 px-4 py-3 text-sm text-error"
+            role="alert"
+          >
+            {artisanProductState.error}
+          </p>
+        )}
         <MarketplaceProducts
           activeCategory={activeCategory}
           bagCount={itemCount}
@@ -64,7 +113,11 @@ const Marketplace = () => {
           onCategoryChange={setActiveCategory}
           onResetFilters={resetFilters}
           onSortOrderChange={setSortOrder}
-          products={visibleProducts}
+          products={visibleProducts.map((product) => ({
+            ...product,
+            cartQuantity:
+              items.find((item) => item.name === product.name)?.quantity ?? 0,
+          }))}
           sortOrder={sortOrder}
         />
       </main>

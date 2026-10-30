@@ -5,15 +5,30 @@ import MarketplaceLayout from '../components/layout/MarketplaceLayout'
 import { useCart } from '../hooks/useCart'
 import content from '../data/local-storage.json'
 import { getProductSlug } from '../utils/marketplace'
+import {
+  getPublishedArtisanListings,
+  toMarketplaceProduct,
+} from '../utils/artisan-storage'
 
-const products = content.marketplace.products
+const sampleProducts = content.marketplace.products
 const formatPrice = (price) => `₹${price.toLocaleString('en-IN')}`
 
 const ProductDetail = () => {
   const { slug } = useParams()
   const navigate = useNavigate()
-  const { addToCart } = useCart()
+  const { addToCart, items } = useCart()
+  const [artisanProducts] = useState(() => {
+    try {
+      return getPublishedArtisanListings().map(toMarketplaceProduct)
+    } catch (error) {
+      console.error('Unable to load artisan product details.', error)
+      return []
+    }
+  })
+  const products = [...sampleProducts, ...artisanProducts]
   const product = products.find((item) => getProductSlug(item.name) === slug)
+  const cartQuantity =
+    items.find((item) => item.name === product?.name)?.quantity ?? 0
   const [quantity, setQuantity] = useState(1)
   const [imageUnavailable, setImageUnavailable] = useState(false)
 
@@ -54,7 +69,7 @@ const ProductDetail = () => {
 
         <div className="mt-6 grid gap-8 lg:grid-cols-2 lg:gap-14">
           <div className="overflow-hidden rounded-3xl border border-border bg-surface-muted">
-            {imageUnavailable ? (
+            {!product.image || imageUnavailable ? (
               <div className="flex aspect-square items-center justify-center text-text-muted">
                 Product image unavailable
               </div>
@@ -78,7 +93,9 @@ const ProductDetail = () => {
             <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-text-secondary">
               <span className="inline-flex items-center gap-1.5">
                 <Star aria-hidden="true" className="h-4 w-4 fill-accent text-accent" />
-                {product.rating} artisan listing
+                {product.rating === 'New'
+                  ? 'New artisan listing'
+                  : `${product.rating} sample rating`}
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <MapPin aria-hidden="true" className="h-4 w-4 text-secondary" />
@@ -90,7 +107,9 @@ const ProductDetail = () => {
               {formatPrice(product.price)}
             </p>
             <p className="mt-1 text-sm text-text-muted">
-              Sample listing price · shipping shown at order summary
+            {product.stock === undefined
+              ? 'Sample listing price · shipping shown at order summary'
+              : `${product.stock} available · shipping shown at order summary`}
             </p>
 
             <div className="mt-7 w-full border-y border-border py-5">
@@ -100,10 +119,15 @@ const ProductDetail = () => {
               <p className="mt-2 leading-7 text-text-secondary">
                 {product.description}
               </p>
+              {product.reusedMaterialKg > 0 && (
+                <p className="mt-3 rounded-lg bg-surface-muted px-3 py-2 text-sm text-text-secondary">
+                  Artisan-reported reused material: {product.reusedMaterialKg} kg per item.
+                </p>
+              )}
               <p className="mt-3 text-sm leading-6 text-text-muted">
-                Each item celebrates skilled handmade work. As a sample
-                marketplace listing, availability and delivery details will be
-                confirmed by the artisan.
+                Each item celebrates skilled handmade work. Availability and
+                delivery details will be confirmed by the artisan after your
+                request.
               </p>
             </div>
 
@@ -124,26 +148,44 @@ const ProductDetail = () => {
                 <button
                   aria-label="Increase quantity"
                   className="inline-flex h-11 w-11 items-center justify-center text-text-secondary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
-                  onClick={() => setQuantity((value) => value + 1)}
+                  disabled={
+                    Number.isFinite(product.stock) &&
+                    quantity + cartQuantity >= product.stock
+                  }
+                  onClick={() =>
+                    setQuantity((value) =>
+                      Number.isFinite(product.stock)
+                        ? Math.min(value + 1, product.stock - cartQuantity)
+                        : value + 1,
+                    )
+                  }
                   type="button"
                 >
                   <Plus aria-hidden="true" className="h-4 w-4" />
                 </button>
               </div>
               <button
-                className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-lg border border-primary px-5 py-3 font-semibold text-primary transition hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+                className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-lg border border-primary px-5 py-3 font-semibold text-primary transition hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary disabled:cursor-not-allowed disabled:opacity-50"
                 onClick={addSelectionToBag}
+                disabled={
+                  product.stock === 0 ||
+                  (Number.isFinite(product.stock) && cartQuantity >= product.stock)
+                }
                 type="button"
               >
                 <ShoppingBag aria-hidden="true" className="h-4 w-4" />
                 Add to bag
               </button>
               <button
-                className="inline-flex min-h-12 flex-1 items-center justify-center rounded-lg bg-primary px-5 py-3 font-semibold text-white transition hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
+                className="inline-flex min-h-12 flex-1 items-center justify-center rounded-lg bg-primary px-5 py-3 font-semibold text-white transition hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 onClick={() => {
                   addSelectionToBag()
                   navigate('/marketplace/order-summary')
                 }}
+                disabled={
+                  product.stock === 0 ||
+                  (Number.isFinite(product.stock) && cartQuantity >= product.stock)
+                }
                 type="button"
               >
                 Order now

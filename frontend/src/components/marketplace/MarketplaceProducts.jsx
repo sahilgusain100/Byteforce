@@ -99,8 +99,8 @@ const MarketplaceProducts = ({
         </div>
 
         <p className="mb-5 rounded-lg border border-border bg-surface px-4 py-3 text-sm leading-6 text-text-muted">
-          Sample listings and prices for preview. Order requests are saved in
-          this browser only; no payment is collected.
+          Some products are sample listings. Artisan-published products and
+          order requests are saved in this browser only; no payment is collected.
         </p>
 
         {products.length > 0 ? (

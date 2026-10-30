@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react'
+import {
+  ArrowLeft,
+  ImageOff,
+  Minus,
+  Plus,
+  ShoppingBag,
+  Trash2,
+} from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import MarketplaceLayout from '../components/layout/MarketplaceLayout'
 import { useAuthDialog } from '../hooks/useAuthDialog'
@@ -92,11 +99,18 @@ const OrderSummary = () => {
                       className="flex flex-col gap-4 py-5 first:pt-0 sm:flex-row"
                       key={item.name}
                     >
-                      <img
-                        alt={item.imageAlt}
-                        className="h-28 w-full rounded-xl object-cover sm:w-32"
-                        src={item.image}
-                      />
+                      {item.image ? (
+                        <img
+                          alt={item.imageAlt}
+                          className="h-28 w-full rounded-xl object-cover sm:w-32"
+                          src={item.image}
+                        />
+                      ) : (
+                        <div className="flex h-28 w-full shrink-0 items-center justify-center rounded-xl bg-surface-muted text-text-muted sm:w-32">
+                          <ImageOff aria-hidden="true" className="h-7 w-7" />
+                          <span className="sr-only">No product photo available</span>
+                        </div>
+                      )}
                       <div className="flex flex-1 flex-col justify-between gap-3 sm:flex-row">
                         <div>
                           <p className="text-xs font-semibold uppercase tracking-wide text-secondary">
@@ -130,6 +144,10 @@ const OrderSummary = () => {
                           <button
                             aria-label={`Increase ${item.name} quantity`}
                             className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-text-secondary hover:text-primary"
+                            disabled={
+                              Number.isFinite(item.stock) &&
+                              item.quantity >= item.stock
+                            }
                             onClick={() =>
                               updateQuantity(item.name, item.quantity + 1)
                             }

@@ -1,3 +1,12 @@
+import {
+  clearAuthToken,
+  getArtisansApi,
+  loginApi,
+  setAuthToken,
+  signupApi,
+  verifyApi,
+} from '../services/auth-api'
+
 const REGISTERED_USERS_KEY = 'skillbridge-registered-users'
 const SESSION_USER_KEY = 'skillbridge-current-user'
 const SAVED_ADDRESSES_KEY = 'skillbridge-saved-addresses'
@@ -240,7 +249,7 @@ function readRegisteredUsers() {
     return users
   } catch (error) {
     console.error('Registered user data in browser storage is invalid.', error)
-    throw new Error('Saved user data could not be read. Clear the app storage and try again.')
+    return []
   }
 }
 
@@ -284,7 +293,7 @@ export function getRegisteredArtisans() {
   return readRegisteredUsers()
     .filter((user) => (user.accountType ?? 'customer') === 'artisan')
     .map((user) => ({
-      id: user.id,
+      id: user.id || user._id,
       name: user.name,
       email: user.email,
       phone: user.phone,
@@ -293,41 +302,82 @@ export function getRegisteredArtisans() {
     }))
 }
 
-export async function authenticateUser(email, password, accountType) {
-  const normalizedEmail = email.trim().toLowerCase()
-  const user = readRegisteredUsers().find(
-    (entry) => entry.email.toLowerCase() === normalizedEmail,
-  )
-
-  if (!user?.passwordSalt || !user?.passwordHash) return null
-
-  const candidateHash = await hashPassword(
-    password,
-    base64ToBytes(user.passwordSalt),
-  )
-  const storedHash = base64ToBytes(user.passwordHash)
-  const isValid =
-    candidateHash.length === storedHash.length &&
-    candidateHash.every((byte, index) => byte === storedHash[index])
-
-  if (!isValid) return null
-  if (accountType && (user.accountType ?? 'customer') !== accountType) return null
-
-  return {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    createdAt: user.createdAt,
-    accountType: user.accountType ?? 'customer',
-    phone: user.phone,
-    artCategory: user.artCategory,
-    experience: user.experience,
-    bio: user.bio,
-    expertise: user.expertise,
-    contactName: user.contactName,
-    industry: user.industry,
-    companyAddress: user.companyAddress,
+export async function fetchArtisansList() {
+  try {
+    const artisans = await getArtisansApi()
+    if (Array.isArray(artisans) && artisans.length > 0) {
+      return artisans
+    }
+  } catch (error) {
+    console.warn('Failed to fetch artisans from backend, using local cache:', error.message)
   }
+  return getRegisteredArtisans()
+}
+
+/**
+ * Authenticate user with Backend API (POST /api/auth/login)
+ */
+export async function authenticateUser(email, password, accountType) {
+  try {
+    const result = await loginApi({ email, password, accountType })
+    if (result?.user) {
+      saveSessionUser(result.user)
+      if (result.token) {
+        setAuthToken(result.token)
+      }
+      return result.user
+    }
+  } catch (apiError) {
+    // If it's an authentication error (401, 400), throw immediately
+    if (apiError.status === 400 || apiError.status === 401) {
+      throw apiError
+    }
+
+    // If backend server is unreachable, attempt local browser fallback
+    console.warn('Backend login unreachable, trying local fallback:', apiError.message)
+    const normalizedEmail = email.trim().toLowerCase()
+    const user = readRegisteredUsers().find(
+      (entry) => entry.email.toLowerCase() === normalizedEmail,
+    )
+
+    if (user?.passwordSalt && user?.passwordHash) {
+      const candidateHash = await hashPassword(
+        password,
+        base64ToBytes(user.passwordSalt),
+      )
+      const storedHash = base64ToBytes(user.passwordHash)
+      const isValid =
+        candidateHash.length === storedHash.length &&
+        candidateHash.every((byte, index) => byte === storedHash[index])
+
+      if (isValid) {
+        if (accountType && (user.accountType ?? 'customer') !== accountType) {
+          throw new Error(`Account is registered as ${user.accountType}, not ${accountType}.`)
+        }
+        const safeUser = {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          createdAt: user.createdAt,
+          accountType: user.accountType ?? 'customer',
+          phone: user.phone,
+          artCategory: user.artCategory,
+          experience: user.experience,
+          bio: user.bio,
+          expertise: user.expertise,
+          contactName: user.contactName,
+          industry: user.industry,
+          companyAddress: user.companyAddress,
+        }
+        saveSessionUser(safeUser)
+        return safeUser
+      }
+    }
+
+    throw apiError
+  }
+
+  return null
 }
 
 export function readSessionUser() {
@@ -348,50 +398,91 @@ export function saveSessionUser(user) {
 }
 
 export function clearSessionUser() {
+  clearAuthToken()
   window.localStorage.removeItem(SESSION_USER_KEY)
 }
 
-export async function saveRegisteredUser(profile) {
-  const users = readRegisteredUsers()
-  const normalizedEmail = profile.email.trim().toLowerCase()
-  const existingUser = users.find(
-    (user) => user.email.toLowerCase() === normalizedEmail,
-  )
-
-  if (existingUser?.passwordSalt && existingUser?.passwordHash) {
-    throw new Error('An account with this email already exists. Log in instead.')
-  }
-
-  if (typeof profile.password !== 'string' || profile.password.length < 8) {
-    throw new Error('Use a password with at least 8 characters.')
-  }
-
-  if (!window.crypto?.getRandomValues) {
-    throw new Error('Secure password storage is unavailable in this browser.')
-  }
-
-  const salt = window.crypto.getRandomValues(new Uint8Array(16))
-  const passwordHash = await hashPassword(profile.password, salt)
-  const newUser = {
-    id: existingUser?.id ?? `user-${Date.now()}`,
-    name: profile.name?.trim() || existingUser?.name,
-    email: normalizedEmail,
-    createdAt: existingUser?.createdAt ?? new Date().toISOString(),
-    accountType: profile.accountType ?? existingUser?.accountType ?? 'customer',
-    phone: profile.phone?.trim() || existingUser?.phone,
-    artCategory: profile.artCategory?.trim() || existingUser?.artCategory,
-    experience: profile.experience?.trim() || existingUser?.experience,
-    bio: profile.bio?.trim() || existingUser?.bio,
-    expertise: profile.expertise?.trim() || existingUser?.expertise,
-    contactName: profile.contactName?.trim() || existingUser?.contactName,
-    industry: profile.industry?.trim() || existingUser?.industry,
-    companyAddress:
-      profile.companyAddress?.trim() || existingUser?.companyAddress,
-    passwordSalt: bytesToBase64(salt),
-    passwordHash: bytesToBase64(passwordHash),
-  }
-
+/**
+ * Verify current session with Backend API (GET /api/auth/verify)
+ */
+export async function verifyUserSession() {
   try {
+    const result = await verifyApi()
+    if (result?.success && result?.user) {
+      saveSessionUser(result.user)
+      return result.user
+    }
+  } catch (error) {
+    console.warn('Session verification error:', error.message)
+    // If token expired or unauthorized, clear session
+    if (error.status === 401) {
+      clearSessionUser()
+    }
+    throw error
+  }
+  return null
+}
+
+/**
+ * Register a new user with Backend API (POST /api/auth/signup)
+ */
+export async function saveRegisteredUser(profile) {
+  try {
+    const result = await signupApi(profile)
+    if (result?.user) {
+      saveSessionUser(result.user)
+      if (result.token) {
+        setAuthToken(result.token)
+      }
+      return result.user
+    }
+  } catch (apiError) {
+    // If server returned a business logic error (e.g. email already exists), throw it
+    if (apiError.status === 409 || apiError.status === 400) {
+      throw apiError
+    }
+
+    // If backend is unreachable, handle fallback
+    console.warn('Backend signup unreachable, falling back to local storage:', apiError.message)
+    const users = readRegisteredUsers()
+    const normalizedEmail = profile.email.trim().toLowerCase()
+    const existingUser = users.find(
+      (user) => user.email.toLowerCase() === normalizedEmail,
+    )
+
+    if (existingUser?.passwordSalt && existingUser?.passwordHash) {
+      throw new Error('An account with this email already exists. Log in instead.')
+    }
+
+    if (typeof profile.password !== 'string' || profile.password.length < 6) {
+      throw new Error('Use a password with at least 6 characters.')
+    }
+
+    if (!window.crypto?.getRandomValues) {
+      throw new Error('Secure password storage is unavailable in this browser.')
+    }
+
+    const salt = window.crypto.getRandomValues(new Uint8Array(16))
+    const passwordHash = await hashPassword(profile.password, salt)
+    const newUser = {
+      id: existingUser?.id ?? `user-${Date.now()}`,
+      name: profile.name?.trim() || existingUser?.name,
+      email: normalizedEmail,
+      createdAt: existingUser?.createdAt ?? new Date().toISOString(),
+      accountType: profile.accountType ?? existingUser?.accountType ?? 'customer',
+      phone: profile.phone?.trim() || existingUser?.phone,
+      artCategory: profile.artCategory?.trim() || existingUser?.artCategory,
+      experience: profile.experience?.trim() || existingUser?.experience,
+      bio: profile.bio?.trim() || existingUser?.bio,
+      expertise: profile.expertise?.trim() || existingUser?.expertise,
+      contactName: profile.contactName?.trim() || existingUser?.contactName,
+      industry: profile.industry?.trim() || existingUser?.industry,
+      companyAddress:
+        profile.companyAddress?.trim() || existingUser?.companyAddress,
+      passwordSalt: bytesToBase64(salt),
+      passwordHash: bytesToBase64(passwordHash),
+    }
+
     window.localStorage.setItem(
       REGISTERED_USERS_KEY,
       JSON.stringify(
@@ -400,24 +491,26 @@ export async function saveRegisteredUser(profile) {
           : [...users, newUser],
       ),
     )
-  } catch (error) {
-    console.error('Unable to save the registered account.', error)
-    throw new Error('Your account could not be saved in this browser.')
+
+    const safeUser = {
+      id: newUser.id,
+      name: newUser.name,
+      email: newUser.email,
+      createdAt: newUser.createdAt,
+      accountType: newUser.accountType,
+      phone: newUser.phone,
+      artCategory: newUser.artCategory,
+      experience: newUser.experience,
+      bio: newUser.bio,
+      expertise: newUser.expertise,
+      contactName: newUser.contactName,
+      industry: newUser.industry,
+      companyAddress: newUser.companyAddress,
+    }
+
+    saveSessionUser(safeUser)
+    return safeUser
   }
 
-  return {
-    id: newUser.id,
-    name: newUser.name,
-    email: newUser.email,
-    createdAt: newUser.createdAt,
-    accountType: newUser.accountType,
-    phone: newUser.phone,
-    artCategory: newUser.artCategory,
-    experience: newUser.experience,
-    bio: newUser.bio,
-    expertise: newUser.expertise,
-    contactName: newUser.contactName,
-    industry: newUser.industry,
-    companyAddress: newUser.companyAddress,
-  }
+  throw new Error('Unable to complete registration.')
 }

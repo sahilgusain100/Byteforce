@@ -1,18 +1,24 @@
+import dns from "node:dns";
+dns.setServers(["8.8.8.8", "1.1.1.1"]);
 
-import express from "express";
 import dotenv from "dotenv";
-
 dotenv.config();
 
-const app = express();
+import app from "./app.js";
+import { connectDB } from "./config/db.js";
+
 const PORT = process.env.PORT || 8000;
 
-app.use(express.json());
+const startServer = async () => {
+  try {
+    await connectDB();
+    app.listen(PORT, () => {
+      console.log(`🚀 Byteforce backend server running on http://localhost:${PORT}`);
+    });
+  } catch (error) {
+    console.error("❌ Failed to start server:", error.message);
+    process.exit(1);
+  }
+};
 
-app.get("/", (req, res) => {
-    res.send("Byteforce backend is running!");
-});
-
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+startServer();

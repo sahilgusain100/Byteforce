@@ -31,6 +31,7 @@ const AuthPage = ({ mode, onClose, onModeChange, onAuthenticate }) => {
           name: formData.get('name'),
           email: formData.get('email'),
           password,
+          accountType: 'customer',
         })
         onAuthenticate(user)
         return
@@ -68,135 +69,132 @@ const AuthPage = ({ mode, onClose, onModeChange, onAuthenticate }) => {
         className="relative my-auto w-full max-w-md rounded-2xl border border-border bg-surface p-6 shadow-2xl sm:p-9"
         role="dialog"
       >
-          <button
-            aria-label="Close sign-in dialog"
-            autoFocus
-            className="absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-full text-text-muted transition hover:bg-surface-muted hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
-            onClick={onClose}
-            type="button"
-          >
-            <X aria-hidden="true" className="h-5 w-5" />
-          </button>
-          <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-full bg-surface-muted text-secondary">
-            <ShieldCheck aria-hidden="true" className="h-6 w-6" />
-          </div>
-          <p className="text-sm font-semibold text-secondary">
-            {isSignup ? 'Join our community' : 'Welcome back'}
-          </p>
-          <h1
-            className="mt-1 font-serif text-3xl font-semibold text-text-main"
-            id="auth-heading"
-          >
-            {isSignup ? 'Create your account' : 'Log in to SkillBridge'}
-          </h1>
-          <p className="mt-2 text-sm leading-6 text-text-secondary">
-            {isSignup
-              ? 'Create a SkillBridge profile saved on this device.'
-              : 'Log in with the email and password you used to sign up.'}
-          </p>
+        <button
+          aria-label="Close sign-in dialog"
+          autoFocus
+          className="absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-full text-text-muted transition hover:bg-surface-muted hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+          onClick={onClose}
+          type="button"
+        >
+          <X aria-hidden="true" className="h-5 w-5" />
+        </button>
+        <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-full bg-surface-muted text-secondary">
+          <ShieldCheck aria-hidden="true" className="h-6 w-6" />
+        </div>
+        <p className="text-sm font-semibold text-secondary">
+          {isSignup ? 'Join our community' : 'Welcome back'}
+        </p>
+        <h1
+          className="mt-1 font-serif text-3xl font-semibold text-text-main"
+          id="auth-heading"
+        >
+          {isSignup ? 'Create your account' : 'Log in to SkillBridge'}
+        </h1>
+        <p className="mt-2 text-sm leading-6 text-text-secondary">
+          {isSignup
+            ? 'Create a SkillBridge profile secured by Byteforce API.'
+            : 'Log in with the email and password you used to sign up.'}
+        </p>
 
-          <form className="mt-7 space-y-4" onSubmit={handleSubmit}>
-            {isSignup && (
-              <>
-                <label className="block text-sm font-medium text-text-main">
-                  Full name
-                  <input
-                    autoComplete="name"
-                    className={inputClass}
-                    name="name"
-                    placeholder="Your full name"
-                    required
-                  />
-                </label>
-              </>
-            )}
-
+        <form className="mt-7 space-y-4" onSubmit={handleSubmit}>
+          {isSignup && (
             <label className="block text-sm font-medium text-text-main">
-              Email address
+              Full name
               <input
-                autoComplete="email"
+                autoComplete="name"
                 className={inputClass}
-                id="auth-email"
-                name="email"
-                placeholder="you@example.com"
+                name="name"
+                placeholder="Your full name"
                 required
-                type="email"
               />
             </label>
+          )}
 
+          <label className="block text-sm font-medium text-text-main">
+            Email address
+            <input
+              autoComplete="email"
+              className={inputClass}
+              id="auth-email"
+              name="email"
+              placeholder="you@example.com"
+              required
+              type="email"
+            />
+          </label>
+
+          <label className="block text-sm font-medium text-text-main">
+            Password
+            <input
+              autoComplete={isSignup ? 'new-password' : 'current-password'}
+              className={inputClass}
+              minLength={6}
+              name="password"
+              placeholder={isSignup ? 'At least 6 characters' : 'Your password'}
+              required
+              type="password"
+            />
+          </label>
+
+          {isSignup && (
             <label className="block text-sm font-medium text-text-main">
-              Password
+              Confirm password
               <input
-                autoComplete={isSignup ? 'new-password' : 'current-password'}
+                autoComplete="new-password"
                 className={inputClass}
-                minLength={8}
-                name="password"
-                placeholder={isSignup ? 'At least 8 characters' : 'Your password'}
+                minLength={6}
+                name="confirmPassword"
+                placeholder="Re-enter your password"
                 required
                 type="password"
               />
             </label>
+          )}
 
-            {isSignup && (
-              <label className="block text-sm font-medium text-text-main">
-                Confirm password
-                <input
-                  autoComplete="new-password"
-                  className={inputClass}
-                  minLength={8}
-                  name="confirmPassword"
-                  placeholder="Re-enter your password"
-                  required
-                  type="password"
-                />
-              </label>
-            )}
+          <p className="text-xs leading-5 text-text-muted">
+            Your password is securely encrypted with bcrypt and authenticated with JWT tokens.
+          </p>
 
-            <p className="text-xs leading-5 text-text-muted">
-              This demo stores your profile and a password hash only in this
-              browser. Don’t reuse a password from another account.
+          {notice && (
+            <p
+              aria-live="polite"
+              className={`rounded-lg border px-3.5 py-3 text-sm leading-5 ${
+                noticeIsError
+                  ? 'border-error/30 bg-red-50 text-error'
+                  : 'border-border bg-background text-text-secondary'
+              }`}
+              role={noticeIsError ? 'alert' : 'status'}
+            >
+              {notice}
             </p>
+          )}
 
-            {notice && (
-              <p
-                aria-live="polite"
-                className={`rounded-lg border px-3.5 py-3 text-sm leading-5 ${
-                  noticeIsError
-                    ? 'border-error/30 bg-red-50 text-error'
-                    : 'border-border bg-background text-text-secondary'
-                }`}
-                role={noticeIsError ? 'alert' : 'status'}
-              >
-                {notice}
-              </p>
-            )}
+          <button
+            className="inline-flex min-h-12 w-full items-center justify-center rounded-lg bg-primary px-5 py-3 font-semibold text-white transition hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70"
+            disabled={isSubmitting}
+            type="submit"
+          >
+            {isSubmitting
+              ? 'Please wait…'
+              : isSignup
+                ? 'Create account'
+                : 'Log in'}
+          </button>
+        </form>
 
-            <button
-              className="inline-flex min-h-12 w-full items-center justify-center rounded-lg bg-primary px-5 py-3 font-semibold text-white transition hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70"
-              disabled={isSubmitting}
-              type="submit"
-            >
-              {isSubmitting
-                ? 'Please wait…'
-                : isSignup
-                  ? 'Create account'
-                  : 'Log in'}
-            </button>
-          </form>
-
-          <p className="mt-6 text-center text-sm text-text-secondary">
-            {isSignup ? 'Already have an account?' : 'New to SkillBridge?'}{' '}
-            <button
-              className="font-semibold text-primary underline decoration-border underline-offset-4 hover:decoration-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
-              onClick={() => onModeChange(isSignup ? 'login' : 'signup')}
-              type="button"
-            >
-              {isSignup ? 'Log in' : 'Create an account'}
-            </button>
-          </p>
-          <p className="mt-4 text-center text-xs text-text-muted">
-            Local demo only—not secure cloud authentication.
-          </p>
+        <p className="mt-6 text-center text-sm text-text-secondary">
+          {isSignup ? 'Already have an account?' : 'New to SkillBridge?'}{' '}
+          <button
+            className="font-semibold text-primary underline decoration-border underline-offset-4 hover:decoration-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+            onClick={() => onModeChange(isSignup ? 'login' : 'signup')}
+            type="button"
+          >
+            {isSignup ? 'Log in' : 'Create an account'}
+          </button>
+        </p>
+        <p className="mt-4 text-center text-xs text-text-muted">
+          Secured by Byteforce Authentication & MongoDB.
+        </p>
       </section>
     </div>
   )

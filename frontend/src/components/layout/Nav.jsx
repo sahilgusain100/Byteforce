@@ -93,7 +93,7 @@ const Nav = ({ variant = 'home', cartCount = 0 }) => {
 
   return (
     <>
-    <nav className='bg-primary h-18 text-white flex items-center justify-center gap-5 font-sans'>
+    <nav className="flex min-w-0 w-full flex-wrap items-center justify-center gap-x-4 gap-y-2 bg-primary px-2 py-2 font-sans text-white md:w-auto md:flex-1 md:justify-end">
 
         <a>Find Artisans</a>
         <a>Story of Art</a>

@@ -12,9 +12,10 @@ import ExpertAuthPage from './pages/ExpertAuthPage'
 import ExpertDashboardPage from './pages/ExpertDashboardPage'
 import IndustryAuthPage from './pages/IndustryAuthPage'
 import IndustryDashboardPage from './pages/IndustryDashboardPage'
+import NotFoundPage from './pages/NotFoundPage'
 import { CartProvider } from './context/CartContext'
 import AuthDialogProvider from './context/AuthDialogProvider'
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
 
 const App = () => {
   return (
@@ -38,7 +39,7 @@ const App = () => {
               path="/marketplace/order-confirmation"
               element={<OrderConfirmation />}
             />
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </AuthDialogProvider>
       </BrowserRouter>

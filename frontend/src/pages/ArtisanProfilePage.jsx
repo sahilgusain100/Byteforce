@@ -713,7 +713,7 @@ const ArtisanProfilePage = () => {
                     const Icon = course.icon ?? GraduationCap
                   return (
                     <article
-                      className={`flex h-full flex-col rounded-xl border bg-background p-5 transition ${
+                      className={`flex h-full min-w-0 flex-col rounded-xl border bg-background p-5 transition ${
                         isOpen ? 'border-secondary shadow-card' : 'border-border hover:border-border-strong'
                       }`}
                       key={course.id}

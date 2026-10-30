@@ -16,6 +16,7 @@ import {
   UsersRound,
   UserRoundPlus,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import content from '../../data/local-storage.json';
 
 const { roles, skills, steps, platformGoals } = content;
@@ -88,29 +89,46 @@ function RolesSection() {
           description="Whether you make, buy, teach, or bring a bigger brief, good work starts with people meeting each other."
         />
         <div className="mt-12 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-          {roles.map((role) => (
-            <article
-              className="group flex h-full flex-col rounded-xl bg-card p-6 shadow-card transition duration-200 hover:-translate-y-1 hover:border-border-strong hover:shadow-card-hover focus-within:ring-2 focus-within:ring-secondary focus-within:ring-offset-2"
-              key={role.title}
-            >
-              <div className={`mb-5 flex h-12 w-12 items-center justify-center rounded-full ${role.tone}`}>
-                <Icon className="h-6 w-6 transition-transform duration-200 group-hover:scale-110" name={role.icon} />
-              </div>
-              <h3 className="font-serif text-xl font-semibold text-main">
-                {role.title}
-              </h3>
-              <p className="mt-3 flex-1 leading-7 text-text-secondary">
-                {role.description}
-              </p>
-              <a
-                className="mt-5 inline-flex w-fit items-center gap-2 font-semibold text-primary underline decoration-border underline-offset-4 transition-colors group-hover:decoration-primary hover:decoration-primary focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
-                href={role.href}
+          {roles.map((role) => {
+            const card = (
+              <article
+                className="group flex h-full flex-col rounded-xl bg-card p-6 shadow-card transition duration-200 hover:-translate-y-1 hover:border-border-strong hover:shadow-card-hover focus-within:ring-2 focus-within:ring-secondary focus-within:ring-offset-2"
+                key={role.title}
               >
-                {role.action}
-                <span aria-hidden="true">→</span>
+                <div className={`mb-5 flex h-12 w-12 items-center justify-center rounded-full ${role.tone}`}>
+                  <Icon className="h-6 w-6 transition-transform duration-200 group-hover:scale-110" name={role.icon} />
+                </div>
+                <h3 className="font-serif text-xl font-semibold text-main">
+                  {role.title}
+                </h3>
+                <p className="mt-3 flex-1 leading-7 text-text-secondary">
+                  {role.description}
+                </p>
+                <span className="mt-5 inline-flex w-fit items-center gap-2 font-semibold text-primary underline decoration-border underline-offset-4 transition-colors group-hover:decoration-primary">
+                  {role.action}
+                  <span aria-hidden="true">→</span>
+                </span>
+              </article>
+            );
+
+            return role.href.startsWith('/') ? (
+              <Link
+                className="rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
+                key={role.title}
+                to={role.href}
+              >
+                {card}
+              </Link>
+            ) : (
+              <a
+                className="rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
+                href={role.href}
+                key={role.title}
+              >
+                {card}
               </a>
-            </article>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>

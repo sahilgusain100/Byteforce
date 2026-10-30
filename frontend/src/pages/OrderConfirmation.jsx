@@ -93,10 +93,11 @@ const OrderConfirmation = () => {
               </div>
 
               <p className="mt-6 rounded-lg border border-border bg-background p-4 text-sm leading-6 text-text-muted">
-                This is a front-end demo. The request has not been sent to an
-                artisan, personal delivery details are not retained after this
-                session, and no payment has been processed. Connect an order
-                backend and payment provider to accept real orders.
+                This is a front-end demo. The request and delivery details are
+                saved in this browser and can be reviewed by the matching
+                artisan profile on this device. No remote notification or
+                payment is sent. Connect an order backend and payment provider
+                to accept real orders.
               </p>
 
               <Link

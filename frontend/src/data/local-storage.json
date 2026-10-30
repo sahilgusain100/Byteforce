@@ -4,16 +4,16 @@
       "title": "I'm an Artisan",
       "icon": "artisan",
       "description": "Showcase handmade products, find paid work, connect with customers, and keep growing your skills.",
-      "action": "Learn about the mission",
-      "href": "#mission",
+      "action": "Join as an artisan",
+      "href": "/artisan/auth",
       "tone": "bg-surface text-primary"
     },
     {
       "title": "I'm a Customer",
       "icon": "customer",
       "description": "Discover handmade products and support the people and traditions behind every creation.",
-      "action": "Explore the crafts",
-      "href": "#explore-skills",
+      "action": "Browse the marketplace",
+      "href": "/marketplace",
       "tone": "bg-surface text-text-main"
     },
     {

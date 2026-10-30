@@ -280,7 +280,7 @@ async function hashPassword(password, salt) {
   return new Uint8Array(hash)
 }
 
-export async function authenticateUser(email, password) {
+export async function authenticateUser(email, password, accountType) {
   const normalizedEmail = email.trim().toLowerCase()
   const user = readRegisteredUsers().find(
     (entry) => entry.email.toLowerCase() === normalizedEmail,
@@ -298,12 +298,18 @@ export async function authenticateUser(email, password) {
     candidateHash.every((byte, index) => byte === storedHash[index])
 
   if (!isValid) return null
+  if (accountType && (user.accountType ?? 'customer') !== accountType) return null
 
   return {
     id: user.id,
     name: user.name,
     email: user.email,
     createdAt: user.createdAt,
+    accountType: user.accountType ?? 'customer',
+    phone: user.phone,
+    artCategory: user.artCategory,
+    experience: user.experience,
+    bio: user.bio,
   }
 }
 
@@ -351,9 +357,14 @@ export async function saveRegisteredUser(profile) {
   const passwordHash = await hashPassword(profile.password, salt)
   const newUser = {
     id: existingUser?.id ?? `user-${Date.now()}`,
-    name: existingUser?.name ?? profile.name.trim(),
+    name: profile.name?.trim() || existingUser?.name,
     email: normalizedEmail,
     createdAt: existingUser?.createdAt ?? new Date().toISOString(),
+    accountType: profile.accountType ?? existingUser?.accountType ?? 'customer',
+    phone: profile.phone?.trim() || existingUser?.phone,
+    artCategory: profile.artCategory?.trim() || existingUser?.artCategory,
+    experience: profile.experience?.trim() || existingUser?.experience,
+    bio: profile.bio?.trim() || existingUser?.bio,
     passwordSalt: bytesToBase64(salt),
     passwordHash: bytesToBase64(passwordHash),
   }
@@ -377,5 +388,10 @@ export async function saveRegisteredUser(profile) {
     name: newUser.name,
     email: newUser.email,
     createdAt: newUser.createdAt,
+    accountType: newUser.accountType,
+    phone: newUser.phone,
+    artCategory: newUser.artCategory,
+    experience: newUser.experience,
+    bio: newUser.bio,
   }
 }

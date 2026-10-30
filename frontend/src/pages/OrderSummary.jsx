@@ -299,9 +299,10 @@ const OrderSummary = () => {
                 </p>
               )}
               <p className="mt-5 rounded-lg border border-border bg-background p-3 text-xs leading-5 text-text-muted">
-                Demo only: sample prices and delivery estimate. This does not
-                send payment or contact an artisan. Your delivery address is
-                saved locally on this device for future orders.
+                Demo only: sample prices and delivery estimate. Your order
+                request and delivery details are saved in this browser and can
+                be reviewed from the matching artisan profile on this device.
+                No remote notification or payment is sent.
               </p>
               <button
                 className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary px-5 py-3 font-semibold text-white transition hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
